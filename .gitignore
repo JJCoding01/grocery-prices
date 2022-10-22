@@ -1,1 +1,6 @@
 env/*
+
+data/*
+
+# ignore any databases that might exist for testing purposes
+*.db
