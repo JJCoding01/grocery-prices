@@ -21,6 +21,7 @@ format-all:
 
 lint:
 	flake8 $(PACKAGE_NAME)
+	pylint $(PACKAGE_NAME)
 
 lint-tests:
 	flake8 $(PACKAGE_NAME)

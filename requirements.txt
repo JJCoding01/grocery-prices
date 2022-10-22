@@ -3,5 +3,6 @@ flake8
 isort
 numpy
 pandas
+pylint
 pytest
 sqlalchemy
