@@ -1,6 +1,7 @@
 # pylint: disable=F
 # flake8: noqa
 
+from .availability import Availability
 from .category import Category
 from .item import Item
 from .preference import Preference, PreferenceType
