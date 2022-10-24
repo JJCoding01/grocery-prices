@@ -18,4 +18,4 @@ class Store(Base):
         self.active = active
 
     def __repr__(self):
-        return f"{self.__name__}('{self.name}')"
+        return f"{self.__class__.__name__}('{self.name}')"
