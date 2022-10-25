@@ -8,12 +8,10 @@ class Unit(Base):
 
     unit_id = Column("UnitID", Integer, primary_key=True, autoincrement=True)
 
-    name = Column("Name", String, nullable=False, unique=True)
-    symbol = Column("Symbol", String, nullable=True)
+    unit = Column("Unit", String, nullable=False, unique=True)
 
-    def __init__(self, name, symbol=None):
-        self.name = name
-        self.symbol = symbol
+    def __init__(self, unit):
+        self.unit = unit
 
     def __repr__(self):
-        return f"{self.__class__.__name__}('{self.name}', '{self.symbol}')"
+        return f"{self.__class__.__name__}('{self.unit}')"
