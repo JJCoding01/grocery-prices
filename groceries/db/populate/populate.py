@@ -120,6 +120,6 @@ def get_prices(price_path, stores_db, items_db, preferences_db):
 
         df[f"{store}_model"] = df.apply(lambda row: create_price(row, store), axis=1)
         store_prices = df[f"{store}_model"].tolist()
-        store_prices = [p for p in prices if p is not None]
+        store_prices = [p for p in store_prices if p is not None]
         prices.extend(store_prices)
     return prices
