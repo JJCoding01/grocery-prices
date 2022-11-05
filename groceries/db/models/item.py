@@ -13,8 +13,7 @@ class Item(Base):
         "CategoryID", Integer, ForeignKey("Categories.CategoryID"), nullable=True
     )
 
-    name = Column("Name", String, nullable=False, unique=True)
-    note = Column("Notes", String)
+    description = Column("Description", String, nullable=False, unique=True)
     active = Column("Active", Boolean, nullable=False, default=True)
 
     unit = relationship("Unit")
@@ -22,11 +21,11 @@ class Item(Base):
 
     prices = relationship("Price", back_populates="item")
 
-    def __init__(self, name, unit, category, note=None):
-        self.name = name
+    def __init__(self, description, unit, category, note=None):
+        self.description = description
         self.unit = unit
         self.category = category
         self.note = note
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.name}, {self.unit}, {self.category})"
+        return f"{self.__class__.__name__}({self.description}, {self.unit}, {self.category})"
