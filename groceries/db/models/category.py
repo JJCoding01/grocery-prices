@@ -12,13 +12,10 @@ class Category(Base):
     )
 
     category = Column("Category", String, nullable=False, unique=True)
-    note = Column("Note", String, nullable=True)
-
     items = relationship("Item", back_populates="category")
 
-    def __init__(self, category, note=None):
+    def __init__(self, category):
         self.category = category
-        self.note = note
 
     def __repr__(self):
-        return f"{self.__class__.__name__}('{self.category}', '{self.note}')"
+        return f"{self.__class__.__name__}('{self.category}')"
