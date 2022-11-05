@@ -10,6 +10,8 @@ format-tests:
 	black tests
 
 format-main:
+	isort main.py
+	black main.py
 	isort main_db.py
 	black main_db.py
 
