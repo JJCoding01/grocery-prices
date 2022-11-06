@@ -39,7 +39,6 @@ def get_items(items_path, categories_db, units_db, stores_db):
 
     df = pd.read_csv(items_path)
 
-    df.sort_values(by=["category", "name"], inplace=True)
     df["model"] = df.apply(
         lambda row: models.Item(
             description=row["description"],
