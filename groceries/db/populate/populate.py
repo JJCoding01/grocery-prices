@@ -45,7 +45,7 @@ def get_items(items_path, categories_db, units_db):
     df.sort_values(by=["category", "name"], inplace=True)
     df["model"] = df.apply(
         lambda row: models.Item(
-            name=row["name"],
+            description=row["description"],
             unit=units.get(row["unit"], None),
             category=categories.get(row["category"], None),
             note=row["note"],
