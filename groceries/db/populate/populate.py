@@ -104,7 +104,7 @@ def get_prices(price_path, stores_db, items_db, preferences_db):
         return None
 
     stores = {store.name.lower(): store for store in stores_db}
-    items = {item.name: item for item in items_db}
+    items = {item.description: item for item in items_db}
     preferences = {preference.short: preference for preference in preferences_db}
 
     df = pd.read_csv(price_path)
