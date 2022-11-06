@@ -17,7 +17,7 @@ def initial_populate():
     stores = [x for x in base_items if isinstance(x, models.Store)]
     preferences = [x for x in base_items if isinstance(x, models.PreferenceType)]
 
-    items = populate.get_items(DATA_PATH / "items.csv", categories, units)
+    items = populate.get_items(DATA_PATH / "items.csv", categories, units, stores)
 
     prices = populate.get_prices(DATA_PATH / "prices.csv", stores, items, preferences)
 
