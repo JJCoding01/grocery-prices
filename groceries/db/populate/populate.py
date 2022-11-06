@@ -5,7 +5,7 @@ from .. import models
 
 def __get_setup(path, func):
 
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, na_filter=False)
     df["model"] = df.apply(lambda row: func(row), axis=1)
     return df["model"].tolist()
 
