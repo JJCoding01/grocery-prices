@@ -17,9 +17,7 @@ def get_base_items(path):
         "preference_types.csv": lambda row: models.PreferenceType(
             type_=row["type"], short=row["short"], note=row["note"]
         ),
-        "stores.csv": lambda row: models.Store(
-            name=row["name"], active=row["active"], cost=row["cost"]
-        ),
+        "stores.csv": lambda row: models.Store(name=row["name"], active=row["active"]),
         "units.csv": lambda row: models.Unit(row["unit"]),
     }
 
