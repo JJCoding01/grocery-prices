@@ -30,11 +30,12 @@ def get_base_items(path):
     return data
 
 
-def get_items(items_path, categories_db, units_db):
+def get_items(items_path, categories_db, units_db, stores_db):
     # must be done after base items have been loaded
 
     categories = {category.category: category for category in categories_db}
     units = {unit.unit: unit for unit in units_db}
+    stores = {store.name: store for store in stores_db}
 
     df = pd.read_csv(items_path)
 
@@ -44,7 +45,7 @@ def get_items(items_path, categories_db, units_db):
             description=row["description"],
             unit=units.get(row["unit"], None),
             category=categories.get(row["category"], None),
-            note=row["note"],
+            preferred_store=stores.get(row["preferred_store"]),
         ),
         axis=1,
     )
@@ -63,37 +64,21 @@ def get_prices(price_path, stores_db, items_db, preferences_db):
         except ValueError:
             pass
         if isinstance(price_val, float):
+            pref = preferences.get("S")
             price_ = models.Price(
                 store=store,
                 item=item,
                 price=price_val,
-                date=None,
-                check_price=False,
-                note=None,
+                preference=pref,
             )
             return price_
         if price_val in preferences:
-            preference = models.Preference(
-                store=store,
-                item=item,
-                preference=preferences.get(price_val, None),
-                note=None,
-            )
-            return preference
-
-        if price_val == "NA":
-            availability = models.Availability(
-                store=store, item=item, availability=False
-            )
-            return availability
-        if price_val == "CHECK":
+            pref = preferences.get(price_val)
             price_ = models.Price(
                 store=store,
                 item=item,
-                price=1000,
-                date=None,
-                check_price=True,
-                note=None,
+                price=None,
+                preference=pref,
             )
             return price_
 
