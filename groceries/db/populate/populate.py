@@ -13,9 +13,7 @@ def __get_setup(path, func):
 def get_base_items(path):
 
     maps = {
-        "categories.csv": lambda row: models.Category(
-            category=row["category"], note=row["note"]
-        ),
+        "categories.csv": lambda row: models.Category(category=row["category"]),
         "preference_types.csv": lambda row: models.PreferenceType(
             type_=row["type"], short=row["short"], note=row["note"]
         ),
