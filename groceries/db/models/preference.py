@@ -44,4 +44,4 @@ class PreferenceType(Base):
         self.short = short
 
     def __repr__(self):
-        return f"{self.__class__.__name__}('{self.type_}', '{self.short}'"
+        return f"{self.__class__.__name__}('{self.type_}', '{self.short}')"
