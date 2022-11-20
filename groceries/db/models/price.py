@@ -40,3 +40,6 @@ class Price(Base):
         self.item = item
         self.price = price
         self.preference = preference
+
+    def __repr__(self):
+        return f"{self.store}, {self.item}, {self.price}, {self.preference}"
