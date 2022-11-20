@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from .. import models
@@ -53,53 +54,62 @@ def get_items(items_path, categories_db, units_db, stores_db):
     return items
 
 
-def get_prices(price_path, stores_db, items_db, preferences_db):
-    def create_price(row, store_name):
-        store = stores.get(store_name, None)
-        item = items.get(row["item"])
-        price_val = row[store_name]
-        try:
-            price_val = float(price_val)
-        except ValueError:
-            pass
-        if isinstance(price_val, float):
-            pref = preferences.get("S")
-            price_ = models.Price(
-                store=store,
-                item=item,
-                price=price_val,
-                preference=pref,
-            )
-            return price_
-        if price_val in preferences:
-            pref = preferences.get(price_val)
-            price_ = models.Price(
-                store=store,
-                item=item,
-                price=None,
-                preference=pref,
-            )
-            return price_
+def __create_price(row):
+    store = row["Store"]
+    item = row["Item"]
+    price_val = row["price"]
+    pref = row["Preference"]
 
+    if np.isnan(price_val) and pref.short == "S":
         return None
+    price_ = models.Price(store=store, item=item, price=price_val, preference=pref)
+    return price_
 
+
+def __parse_price(price_):
+    try:
+        return float(price_)
+    except ValueError:
+        return np.nan
+
+
+def get_prices(price_path, stores_db, items_db, preferences_db):
     stores = {store.name.lower(): store for store in stores_db}
     items = {item.description: item for item in items_db}
     preferences = {preference.short: preference for preference in preferences_db}
 
     df = pd.read_csv(price_path)
 
-    # convert all prices to numerical values. Keeping various notes that are not numbers
-    store_names = [store.lower() for store in stores]
-    prices = []
-    for store in store_names:
-        df[store] = (
-            df[store].apply(lambda x: x.replace("$", "")).apply(lambda x: x.strip())
-        )
-        df[store] = df[store].astype(float, errors="ignore")
+    # change all the store (price) columns into rows
+    df = pd.melt(
+        df, id_vars=["index", "item"], var_name="store_name", value_name="price_raw"
+    )
 
-        df[f"{store}_model"] = df.apply(lambda row: create_price(row, store), axis=1)
-        store_prices = df[f"{store}_model"].tolist()
-        store_prices = [p for p in store_prices if p is not None]
-        prices.extend(store_prices)
+    df["Store"] = df["store_name"].apply(lambda x: stores.get(x))
+    df["Item"] = df["item"].apply(lambda x: items.get(x))
+    df["price_raw"] = (
+        df["price_raw"]
+        .apply(lambda x: str(x).replace("$", ""))
+        .apply(lambda x: x.strip())
+        .astype(float, errors="ignore")
+    )
+    df["Preference"] = df["price_raw"].apply(
+        lambda x: preferences.get(x, preferences["S"])
+    )
+    df["price"] = df["price_raw"].apply(__parse_price)
+
+    df["Price"] = df.apply(__create_price, axis=1)
+    df["preference_type"] = df["Preference"].apply(
+        lambda x: None if x is None else x.short
+    )
+
+    # remove rows that have both a standard preference type and no price.
+    # Those are simply blank, storing these in the price table has no value.
+    # Do this by selecting all rows where the price is not nan or the preference is not
+    # standard
+    df = df[(~np.isnan(df["price"])) | (df["preference_type"] != "S")]
+
+    df = df.sort_values(by="preference_type")
+    prices = df["Price"].tolist()
+
     return prices
