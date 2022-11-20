@@ -64,6 +64,24 @@ def __update_price(row, preference_types=None):
     return price
 
 
+def __new_prices(row, preference_types):
+    if row["Price"] is not None:
+        return None
+
+    item = row["Item"]
+    store = row["Store"]
+    pt, price_val = __parse_price(row["price"], preference_types)
+    try:
+        price_val = float(price_val)
+    except ValueError:
+        price_val = np.nan
+
+    if np.isnan(price_val) and pt.short == "S":
+        return None
+    price_ = models.Price(store=store, item=item, price=price_val, preference=pt)
+    return price_
+
+
 def read_price_book(path, session):
 
     stores = session.query(models.Store).filter(models.Store.active == True).all()
@@ -110,5 +128,6 @@ def read_price_book(path, session):
     )
 
     df["Price"] = df.apply(__update_price, axis=1, preference_types=pref_types)
+    df["new_Price"] = df.apply(__new_prices, axis=1, preference_types=pref_types)
 
     session.flush()
