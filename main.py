@@ -36,22 +36,19 @@ def create_shopping_list():
     filename = SQL_PATH / "shopping_list.sql"
     results_filename = RESULTS_PATH / "shopping_list.xlsx"
 
-    # columns defined by sql query
-    columns = ["store", "category", "item", "price"]
-
     stores = session.query(models.Store).filter(models.Store.active == 1).all()
     store_names = [store.name for store in stores]
+
     with open(filename, "r") as f:
         sql = text(f.read())
 
     engine = session.get_bind()
-    results = engine.execute(sql)
-    table = {column: [] for column in columns}
-    for result in results:
-        for column, value in zip(columns, result):
-            table[column].append(value)
+    conn = engine.connect()
+    df = pd.read_sql(sql, conn)
 
-    df = pd.DataFrame(table)
+    # rename all columns to be lower-case
+    df = df.rename(columns={c: c.lower() for c in df.columns})
+    columns = df.columns.tolist()
     df = df.sort_values(by=columns)
     with pd.ExcelWriter(results_filename) as writer:
         for store_name in store_names:
