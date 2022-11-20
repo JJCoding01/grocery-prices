@@ -1,8 +1,6 @@
 from pathlib import Path
 
-import pandas as pd
-from sqlalchemy import text
-
+from groceries import create_price_book, generate_shopping_list, read_price_book
 from groceries.db import models, populate, recreate_all, session
 
 DATA_PATH = Path(".") / "data" / "setup"
@@ -32,32 +30,35 @@ def initial_populate():
     session.commit()
 
 
-def create_shopping_list():
-    filename = SQL_PATH / "shopping_list.sql"
-    results_filename = RESULTS_PATH / "shopping_list.xlsx"
+def run_generate_shopping_list():
 
-    stores = session.query(models.Store).filter(models.Store.active == 1).all()
-    store_names = [store.name for store in stores]
+    print("generate shopping list")
+    generate_shopping_list(
+        output_path=RESULTS_PATH / "shopping_list.xlsx",
+        changed_path=RESULTS_PATH / "changed.xlsx",
+        sql_path=SQL_PATH / "shopping_list.sql",
+        session=session,
+    )
 
-    with open(filename, "r") as f:
-        sql = text(f.read())
 
-    engine = session.get_bind()
-    conn = engine.connect()
-    df = pd.read_sql(sql, conn)
+def run_create_price_book():
 
-    # rename all columns to be lower-case
-    df = df.rename(columns={c: c.lower() for c in df.columns})
-    columns = df.columns.tolist()
-    df = df.sort_values(by=columns)
-    with pd.ExcelWriter(results_filename) as writer:
-        for store_name in store_names:
-            df[df["store"] == store_name][columns[1:]].to_excel(
-                writer, sheet_name=store_name, index=False
-            )
+    print("create price book")
+    create_price_book(session, RESULTS_PATH / "price_book.xlsx")
+
+
+def run_read_price_book():
+    print("read price book")
+    read_price_book(RESULTS_PATH / "price_book.xlsx", session)
+
+    session.commit()
 
 
 if __name__ == "__main__":
-    recreate_all()
-    initial_populate()
-    create_shopping_list()
+    # recreate_all()
+    # initial_populate()
+
+    # run_create_price_book()
+
+    run_read_price_book()
+    run_generate_shopping_list()
