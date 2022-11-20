@@ -63,53 +63,92 @@ def __price(row, pref_col="pt", price_col="price", standard_pt="S"):
     return pt_
 
 
+def __preferred_store(x):
+    if x is None:
+        return None
+    store = x.preferred_store
+    if store is None:
+        return None
+    return store.name
+
+
+def __store_names(session, active=True):
+    """return list of active store names"""
+    stores = session.query(models.Store).filter(models.Store.active == active).all()
+    store_names = [s.name for s in stores]
+    store_names.sort()
+    return store_names
+
+
+def __parse_pref_type(x):
+    if x is None or x.preference is None:
+        return np.nan
+    return x.preference.short
+
+
+def __parse_category(x):
+    if x.category is None:
+        return
+    return x.category.category
+
+
 def create_price_book(session, out_path):
 
-    # read all item and price data from database and add them to a dataframe
-    results = session.query(models.Item, models.Price).outerjoin(models.Price).all()
-
-    # convert results into dataframe with Item and Price (upper case) column names
+    # Items that DO have a Price, and add the Item and Price objects to a DataFrame
+    result_query = session.query(models.Item, models.Price).outerjoin(models.Price)
+    results = result_query.all()
     df = pd.DataFrame(results, columns=["Item", "Price"])
 
-    # now, process the Item and Price objects and add columns for all rows
+    # get items that do NOT have a price
+    sub_query = session.query(models.Price.item_id)
+    results = session.query(models.Item).where(models.Item.item_id.not_in(sub_query))
+    results = results.all()
+    df_no_prices = pd.DataFrame(results, columns=["Item"])
+
+    # now, process the Price object by extracting key Price related columns. Note that
+    # everything in the dataframe is guaranteed to have a Price object, because of the
+    # query; it was pulling from the Price table in the DB
+    df["store"] = df["Price"].apply(lambda x: None if x is None else x.store.name)
+    df["pt"] = df["Price"].apply(__parse_pref_type)
+    df["price"] = df["Price"].apply(lambda x: None if x is None else x.price)
+    df["price"] = df[["pt", "price"]].apply(__price, axis=1)
+
+    # Now that all price related columns have been processed, combine the Items that do
+    # not have a price. From here down, the Price object does not exist for all rows,
+    # but the Item object does exist for all rows.
+    df = pd.concat([df, df_no_prices], ignore_index=True)
+
     df["item_id"] = df["Item"].apply(lambda x: x.item_id)
     df["item"] = df["Item"].apply(lambda x: x.description)
-    df["category"] = df["Item"].apply(
-        lambda x: None if x.category is None else x.category.category
-    )
+    df["category"] = df["Item"].apply(__parse_category)
     df["unit"] = df["Item"].apply(lambda x: None if x.unit is None else x.unit.unit)
-    df["store"] = df["Price"].apply(lambda x: None if x is None else x.store.name)
-    df["pt"] = df["Price"].apply(
-        lambda x: np.nan if x is None or x.preference is None else x.preference.short
-    )
-    df["price"] = df["Price"].apply(lambda x: None if x is None else x.price)
+    df["pref_store"] = df["Item"].apply(__preferred_store)
+    df["description"] = df[["item", "unit"]].apply(__create_item_description, axis=1)
 
-    df["price"] = df[["pt", "price"]].apply(lambda row: __price(row), axis=1)
-    df["description"] = df[["item", "unit"]].apply(
-        lambda row: __create_item_description(row), axis=1
-    )
-
-    # create dataframe of distinct items and ids
-    price_book = df[["item_id", "category", "description"]].drop_duplicates(
-        subset=["item_id"]
-    )
+    # create dataframe of distinct items, this will serve as the price book DataFrame.
+    # The store price columns will be merged into this DataFrame
+    price_book = df[
+        ["item_id", "category", "description", "pref_store"]
+    ].drop_duplicates(subset=["item_id"])
 
     # create a list of all stores that are in the query (had prices)
     # note that this does not affect the standard df (inplace=False)
-    stores = df["store"].dropna().unique()
+    stores = __store_names(session, active=True)
 
     # iterate over stores and merge prices into price book based on item ID
     for store in stores:
         # get dataframe of item ID and price for each item for current store
         price_df = df[["item_id", "store", "price"]]
         price_df = price_df[price_df["store"] == store]  # select only current store
-        price_df = price_df[
-            ["item_id", "price"]
-        ]  # only item ID and price columns needed
+
+        # only item ID and price columns needed
+        price_df = price_df[["item_id", "price"]]
 
         # merge the price for the current store with the item description dataframe, and
         # rename price column to match store name
-        price_book = pd.merge(price_book, price_df, on="item_id", validate="1:1")
+        price_book = pd.merge(
+            price_book, price_df, on="item_id", how="outer", validate="1:1"
+        )
         price_book = price_book.rename(columns={"price": store})
 
     price_book = price_book.sort_values(by=["category", "description"])
