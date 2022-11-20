@@ -1,11 +1,13 @@
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from sqlalchemy import text
+
 from groceries.db import models, populate, recreate_all, session
 
 DATA_PATH = Path(".") / "data" / "setup"
-SQL_PATH = Path(".") / 'sql'
-RESULTS_PATH = Path('.') / 'data' / 'results'
+SQL_PATH = Path(".") / "sql"
+RESULTS_PATH = Path(".") / "data" / "results"
 
 
 def initial_populate():
@@ -31,15 +33,15 @@ def initial_populate():
 
 
 def create_shopping_list():
-    filename = SQL_PATH / 'shopping_list.sql'
-    results_filename = RESULTS_PATH / 'shopping_list.xlsx'
+    filename = SQL_PATH / "shopping_list.sql"
+    results_filename = RESULTS_PATH / "shopping_list.xlsx"
 
     # columns defined by sql query
-    columns = ['store', 'category', 'item', 'price']
+    columns = ["store", "category", "item", "price"]
 
     stores = session.query(models.Store).filter(models.Store.active == 1).all()
     store_names = [store.name for store in stores]
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         sql = text(f.read())
 
     engine = session.get_bind()
@@ -53,7 +55,9 @@ def create_shopping_list():
     df = df.sort_values(by=columns)
     with pd.ExcelWriter(results_filename) as writer:
         for store_name in store_names:
-            df[df['store'] == store_name][columns[1:]].to_excel(writer, sheet_name=store_name, index=False)
+            df[df["store"] == store_name][columns[1:]].to_excel(
+                writer, sheet_name=store_name, index=False
+            )
 
 
 if __name__ == "__main__":
