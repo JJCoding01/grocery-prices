@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from sqlalchemy import text
@@ -47,6 +48,16 @@ def write_shopping_list(df, session, output_path=None):
     return df
 
 
+def __price_diff(row):
+    original = row["original_price"]
+    updated = row["updated_price"]
+
+    try:
+        return updated - original
+    except TypeError:
+        return np.nan
+
+
 def get_changed(df_original, df_updated):
 
     # add columns for tracking where the data came from after it is combined
@@ -79,6 +90,15 @@ def get_changed(df_original, df_updated):
     # then keep only selected columns
     df_changed.reset_index(inplace=True)
     df_changed = df_changed[columns]
+
+    # change the type for all price columns to numeric or nan
+    for col in ["original", "updated"]:
+        df_changed[f"{col}_price"] = pd.to_numeric(
+            df_changed[f"{col}_price"], errors="coerce", downcast=None
+        )
+
+    # calculate the price difference between new and old prices, where applicable
+    df_changed["price_difference"] = df_changed.apply(__price_diff, axis=1)
     return df_changed
 
 
