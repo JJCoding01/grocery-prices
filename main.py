@@ -1,4 +1,5 @@
 from pathlib import Path
+import logging
 
 from groceries import create_price_book, generate_shopping_list, read_price_book
 from groceries.db import models, populate, recreate_all, session
@@ -7,10 +8,30 @@ DATA_PATH = Path(".") / "data" / "setup"
 SQL_PATH = Path(".") / "sql"
 RESULTS_PATH = Path(".") / "data" / "results"
 
+logger = logging.getLogger("groceries")
+logger.setLevel(logging.DEBUG)  # set logger level to the lowest used by any handler
+
+sh = logging.StreamHandler()
+fh = logging.FileHandler(Path(".") / "groceries.log", mode="w")
+formatter = logging.Formatter(
+    "%(asctime)-4s: %(levelname)-8s :: %(name)-32s :: %(message)s",
+    datefmt="%Y-%m-%d %H:%M",
+)
+fh.setFormatter(formatter)
+sh.setFormatter(logging.Formatter("%(levelname)-8s :: %(name)-32s :: %(message)s"))
+
+fh.setLevel(logging.DEBUG)
+sh.setLevel(logging.INFO)
+
+# add handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(sh)
+
+logger.debug(f"Database engine: {session.get_bind()}")
+
 
 def run_generate_shopping_list():
 
-    print("generate shopping list")
     generate_shopping_list(
         output_path=RESULTS_PATH / "shopping_list.xlsx",
         changed_path=RESULTS_PATH / "changed.xlsx",
@@ -20,13 +41,10 @@ def run_generate_shopping_list():
 
 
 def run_create_price_book():
-
-    print("create price book")
     create_price_book(session, RESULTS_PATH / "price_book.xlsx")
 
 
 def run_read_price_book():
-    print("read price book")
     read_price_book(RESULTS_PATH / "price_book.xlsx", session)
 
     session.commit()
