@@ -113,3 +113,26 @@ def get_prices(price_path, stores_db, items_db, preferences_db):
     prices = df["Price"].tolist()
 
     return prices
+
+
+def initial_populate(data_path, session):
+
+    base = get_base_items(data_path / "base items")
+
+    base_items = []
+    for _, items in base.items():
+        base_items.extend(items)
+
+    categories = [x for x in base_items if isinstance(x, models.Category)]
+    units = [x for x in base_items if isinstance(x, models.Unit)]
+    stores = [x for x in base_items if isinstance(x, models.Store)]
+    preferences = [x for x in base_items if isinstance(x, models.PreferenceType)]
+
+    items = get_items(data_path / "items.csv", categories, units, stores)
+
+    prices = get_prices(data_path / "prices.csv", stores, items, preferences)
+
+    session.add_all(base_items)
+    session.add_all(items)
+    session.add_all(prices)
+    session.commit()
