@@ -1,7 +1,11 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
 from groceries.db import models
+
+logger = logging.getLogger(__name__)
 
 
 def __get_prices_to_delete(df):
@@ -131,3 +135,5 @@ def read_price_book(path, session):
     df["new_Price"] = df.apply(__new_prices, axis=1, preference_types=pref_types)
 
     session.flush()
+
+    logger.info(f"read price book: {path}")

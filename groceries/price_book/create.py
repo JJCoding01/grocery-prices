@@ -1,7 +1,11 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
 from groceries.db import models
+
+logger = logging.getLogger(__name__)
 
 
 def __create_item_description(row, description_col="item", unit_col="unit"):
@@ -94,6 +98,8 @@ def __parse_category(x):
 
 def create_price_book(session, out_path):
 
+    logger.debug(f"start generating price book at: {out_path}")
+
     # Items that DO have a Price, and add the Item and Price objects to a DataFrame
     result_query = session.query(models.Item, models.Price).outerjoin(models.Price)
     results = result_query.all()
@@ -137,6 +143,7 @@ def create_price_book(session, out_path):
 
     # iterate over stores and merge prices into price book based on item ID
     for store in stores:
+        logger.debug(f"process prices for price book for '{store}'")
         # get dataframe of item ID and price for each item for current store
         price_df = df[["item_id", "store", "price"]]
         price_df = price_df[price_df["store"] == store]  # select only current store
@@ -154,5 +161,6 @@ def create_price_book(session, out_path):
     price_book = price_book.sort_values(by=["category", "description"])
 
     if out_path is not None:
+        logger.debug(f"export price book: {out_path}")
         price_book.to_excel(out_path, index=False)
     return price_book

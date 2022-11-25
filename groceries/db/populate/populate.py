@@ -1,7 +1,11 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
 from .. import models
+
+logger = logging.getLogger(__name__)
 
 
 def __get_setup(path, func):
@@ -136,3 +140,5 @@ def initial_populate(data_path, session):
     session.add_all(items)
     session.add_all(prices)
     session.commit()
+
+    logger.info(f"repopulated database with sample data and commit")

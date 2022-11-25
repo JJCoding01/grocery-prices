@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -5,9 +7,11 @@ from sqlalchemy import text
 
 from groceries.db import models
 
+logger = logging.getLogger(__name__)
+
 
 def read_shopping_list(path):
-
+    logger.debug(f"read shopping list: {path}")
     df_dict = pd.read_excel(path, sheet_name=None)
 
     df = pd.DataFrame()
@@ -19,6 +23,7 @@ def read_shopping_list(path):
 
 
 def get_shopping_list(sql_path, session):
+    logger.debug("generate shopping list from database prices")
 
     with open(sql_path, "r") as f:
         sql = text(f.read())
@@ -33,7 +38,6 @@ def get_shopping_list(sql_path, session):
 
 
 def write_shopping_list(df, session, output_path=None):
-
     columns = df.columns.tolist()
     df = df.sort_values(by=columns)
 
@@ -42,6 +46,7 @@ def write_shopping_list(df, session, output_path=None):
         store_names = [store.name for store in stores]
         with pd.ExcelWriter(output_path) as writer:
             for store_name in store_names:
+                logger.debug(f"write shopping list for '{store_name}'")
                 df[df["store"] == store_name][columns[1:]].to_excel(
                     writer, sheet_name=store_name, index=False
                 )
@@ -104,16 +109,17 @@ def get_changed(df_original, df_updated):
 
 def generate_shopping_list(output_path, changed_path, sql_path, session):
 
-    update_changed = True
-    try:
-        df_original = read_shopping_list(output_path)
-    except FileNotFoundError:
-        update_changed = False
-
     df_updated = get_shopping_list(sql_path=sql_path, session=session)
     write_shopping_list(df_updated, session, output_path)
+    try:
+        df_original = read_shopping_list(output_path)
 
-    if update_changed:
         df_changed = get_changed(df_original, df_updated)
         if df_changed is not None:
             df_changed.to_excel(changed_path, index=False)
+    except FileNotFoundError:
+        logger.info(
+            f"original shopping list not found at: {output_path}\nno changes generated"
+        )
+
+    logger.info(f"generated shopping list at: {output_path}")
