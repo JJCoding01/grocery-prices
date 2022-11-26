@@ -50,6 +50,27 @@ def run_read_price_book():
     session.commit()
 
 
+def format_all():
+
+    xl_sets = [("changed", "EFG"), ("shopping_list", "C"), ("price_book", "EFG")]
+    for name, columns in xl_sets:
+        path = RESULTS_PATH / f"{name}.xlsx"
+        if not path.exists():
+            continue
+
+        wb = openpyxl.load_workbook(path, read_only=False)
+        worksheet = wb.active
+        format.column_width(worksheet)
+        format.number_format(
+            worksheet,
+            column_letters=columns,
+            format_=r"$* 0.000;[Color16]$* -0.000;-;[Color41]@",
+        )
+
+        wb.save(path)
+        wb.close()
+
+
 if __name__ == "__main__":
     # recreate_all()
     # populate.initial_populate(DATA_PATH, session)
@@ -58,3 +79,5 @@ if __name__ == "__main__":
 
     run_read_price_book()
     run_generate_shopping_list()
+
+    format_all()
