@@ -1,8 +1,11 @@
-from pathlib import Path
 import logging
 
-from groceries import create_price_book, generate_shopping_list, read_price_book
-from groceries.db import models, populate, recreate_all, session
+from pathlib import Path
+
+import openpyxl
+
+from groceries import create_price_book, format, generate_shopping_list, read_price_book
+from groceries.db import populate, recreate_all, session
 
 DATA_PATH = Path(".") / "data" / "setup"
 SQL_PATH = Path(".") / "sql"
